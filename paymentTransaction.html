@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Transaction - Typhon</title>
+    <script src="https://cdn.jsdelivr.net/npm/@stricahq/typhonjs"></script>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <!-- simple payment transaction -->
+    <h2>Payment Transaction using Typhon DApp Connector</h2>
+    <input id="addressField" type="text" placeholder="Address" /><br />
+    <input id="amountField" type="text" placeholder="Amount in Lovelace" />
+    <div>
+      <button onclick="sendTransaction()">Send</button>
+    </div>
+    <br />
+    <!-- Payment transaction with Tokens -->
+    <div style="margin-top: 60px">
+      <h2>With Tokens and Metadata</h2>
+      <input id="tokenAddressField" type="text" placeholder="Address" /><br />
+      <div style="margin-top: 20px">
+        <span
+          >PolicyId:
+          6b8d07d69639e9413dd637a1a815a7323c69c86abbafb66dbfdb1aa7</span
+        >
+      </div>
+      <div>
+        <span>AssetName: </span>
+      </div>
+      <div>
+        <span>Amount: 1</span>
+      </div>
+      <div>
+        <h4>Metadata Cbor (generated using typhonjs library)</h4>
+        <pre
+          id="metadataCBOR"
+          style="
+            background-color: lightgray;
+            white-space: pre-wrap;
+            word-break: break-all;
+          "
+        ></pre>
+      </div>
+      <button style="margin-top: 20px" onclick="sendWithTokenMetadata()">
+        Send With Tokens and Metadata
+      </button>
+    </div>
+    <br />
+    <div style="margin-top: 40px">
+      <span>TransactionId:</span>
+      <span id="transactionId"></span>
+    </div>
+  </body>
+  <script>
+    var typhon;
+    let auxData;
+
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+
+      auxData = typhonjs.utils
+        .createAuxiliaryDataCbor({
+          metadata: [
+            {
+              label: 674,
+              data: {
+                msg: [
+                  "This is a comment for the transaction xyz, thank you very much!",
+                ],
+              },
+            },
+          ],
+        })
+        .toString("hex");
+
+      document.getElementById("metadataCBOR").innerHTML = auxData;
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function sendTransaction() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const address = document.getElementById("addressField").value;
+      const amount = document.getElementById("amountField").value;
+
+      const paymentResponse = await window.cardano.typhon.paymentTransaction({
+        outputs: [
+          {
+            address: address,
+            amount: amount,
+          },
+        ],
+      });
+
+      if (paymentResponse.status) {
+        document.getElementById("transactionId").innerHTML =
+          paymentResponse.data.transactionId;
+      } else {
+        console.log("paymentResponse: ", paymentResponse);
+      }
+    }
+
+    async function sendWithTokenMetadata() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const address = document.getElementById("tokenAddressField").value;
+
+      const paymentResponse = await window.cardano.typhon.paymentTransaction({
+        auxiliaryDataCbor: auxData,
+        outputs: [
+          {
+            address: address,
+            tokens: [
+              {
+                policyId:
+                  "6b8d07d69639e9413dd637a1a815a7323c69c86abbafb66dbfdb1aa7",
+                assetName: "",
+                amount: "1",
+              },
+            ],
+          },
+        ],
+      });
+
+      if (paymentResponse.status) {
+        document.getElementById("transactionId").innerHTML =
+          paymentResponse.data.transactionId;
+      } else {
+        console.log("paymentResponse: ", paymentResponse);
+      }
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+  </style>
+</html>

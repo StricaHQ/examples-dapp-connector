@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Contract Transaction - Typhon</title>
+    <script src="https://cdn.jsdelivr.net/npm/@stricahq/typhonjs"></script>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <!-- simple payment transaction -->
+    <h2>Payment Transaction using Typhon DApp Connector</h2>
+    <h4>PlutusData</h4>
+    <pre style="background-color: lightgray">
+{
+    constructor: 0,
+    fields: [12, 12],
+}
+    </pre>
+    <div>
+      <button onclick="plutusTransaction()">Send</button>
+    </div>
+    <br />
+    <br />
+    <div style="margin-top: 40px">
+      <span>TransactionId:</span>
+      <span id="transactionId"></span>
+    </div>
+  </body>
+  <script>
+    var typhon;
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function plutusTransaction() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const plutusDataCbor = typhonjs.utils
+        .createPlutusDataCbor({
+          constructor: 0,
+          fields: [12, 12],
+        })
+        .toString("hex");
+
+      const paymentResponse = await window.cardano.typhon.plutusTransaction({
+        inputs: [
+          {
+            txId: "0145b4abc0ac0e315035eb6bbaebf91bdba721097c0a2be3d18f03cc4093f29a",
+            index: 1,
+            redeemer: {
+              plutusDataCbor: plutusDataCbor,
+              exUnits: {
+                mem: 12500000,
+                steps: 10000000000,
+              },
+            },
+            plutusDataCbor: plutusDataCbor,
+            paymentScript: {
+              type: "PlutusScriptV1",
+              cborHex: "",
+            },
+          },
+        ],
+        submit: false,
+      });
+
+      if (paymentResponse.status) {
+        document.getElementById("transactionId").innerHTML =
+          paymentResponse.data.transactionId;
+      } else {
+        console.log("paymentResponse: ", paymentResponse);
+      }
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+  </style>
+</html>
