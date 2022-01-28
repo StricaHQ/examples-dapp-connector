@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Events - Typhon</title>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <h3>Events</h3>
+    <button onclick="subscribe()">Subscribe to all Events</button>
+    <p style="margin-top: 40px">Network Change Event</p>
+    <div id="networkEvents"></div>
+    <span>Account Change Event</span>
+    <div id="accountEvents"></div>
+  </body>
+  <script>
+    var typhon;
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function subscribe() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      typhon.on("networkChanged", () => {
+        document.getElementById("networkEvents").innerHTML +=
+          "<p>Network Changed</p>";
+      });
+
+      typhon.on("accountChanged", () => {
+        document.getElementById("accountEvents").innerHTML +=
+          "<p>Account Changed</p>";
+      });
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+
+    #networkEvents,
+    #accountEvents {
+      margin-bottom: 30px;
+      border: 1px solid black;
+      padding: 0 5px;
+      height: 200px;
+      overflow: auto;
+    }
+  </style>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delegation Transaction - Typhon</title>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <h3>Delegation Transaction using Typhon DApp Connector</h3>
+    <input id="poolIdField" type="text" placeholder="Pool Id" /><br />
+    <button onclick="delegate()">Delegate</button>
+    <div style="margin-top: 20px">
+      <span>TransactionId:</span>
+      <span id="transactionId"></span>
+    </div>
+  </body>
+  <script>
+    var typhon;
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function delegate() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const poolId = document.getElementById("poolIdField").value;
+
+      const delegateResponse =
+        await window.cardano.typhon.delegationTransaction({
+          poolId: poolId,
+        });
+
+      if (delegateResponse.status) {
+        document.getElementById("transactionId").innerHTML =
+          delegateResponse.data.transactionId;
+      } else {
+        console.log("delegateResponse: ", delegateResponse);
+      }
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+  </style>
+</html>

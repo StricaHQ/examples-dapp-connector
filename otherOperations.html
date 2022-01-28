@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <div>
+      <button onclick="readName()">Get Name</button>
+      <span>Name:</span>
+      <span id="walletName"></span>
+    </div>
+    <div>
+      <button onclick="readVersion()">Get Version</button>
+      <span>Version:</span>
+      <span id="walletVersion"></span>
+    </div>
+    <div>
+      <button onclick="readIcon()">Show Wallet Icon</button>
+      <span>Wallet Icon:</span>
+      <img id="logo" src="" height="20" />
+    </div>
+    <div>
+      <button onclick="getNetworkId()">Get Network</button>
+      <span>NetworkId:</span>
+      <span id="networkId"></span>
+    </div>
+    <div>
+      <button onclick="getAddress()">Read Receiving Address</button>
+      <span>address:</span>
+      <span id="address"></span>
+    </div>
+    <div>
+      <button onclick="getBalance()">Read Balance</button>
+    </div>
+  </body>
+  <script>
+    var typhon;
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function readName() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      document.getElementById("walletName").innerHTML =
+        window.cardano.typhon.name;
+    }
+
+    async function readVersion() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      document.getElementById("walletVersion").innerHTML =
+        window.cardano.typhon.version;
+    }
+
+    async function readIcon() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      document
+        .getElementById("logo")
+        .setAttribute("src", window.cardano.typhon.icon);
+    }
+
+    async function getNetworkId() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const networkIdResponse = await window.cardano.typhon.getNetworkId();
+      if (networkIdResponse.status) {
+        document.getElementById("networkId").innerHTML = networkIdResponse.data;
+      } else {
+        console.log("networkIdResponse: ", networkIdResponse);
+      }
+    }
+
+    async function getAddress() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const addressResponse = await window.cardano.typhon.getAddress();
+      if (addressResponse.status) {
+        document.getElementById("address").innerHTML = addressResponse.data;
+      } else {
+        console.log("addressResponse: ", addressResponse);
+      }
+    }
+
+    async function getBalance() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const balanceResponse = await window.cardano.typhon.getBalance();
+      console.log("balanceResponse: ", balanceResponse);
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+  </style>
+</html>
