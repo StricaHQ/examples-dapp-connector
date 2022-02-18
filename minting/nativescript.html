@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mint Transaction (Nativescript) - Typhon</title>
+    <script src="https://cdn.jsdelivr.net/npm/@stricahq/typhonjs"></script>
+  </head>
+  <body>
+    <div id="notInstalledBanner">Typhon Extension not installed</div>
+    <h3>Minting (Native Script) using Typhon DApp Connector</h3>
+    <input id="assetName" type="text" placeholder="assetName" /><br />
+    <input id="amount" type="text" placeholder="amount" /><br />
+    <button onclick="mint()">Mint</button>
+    <p id="receivingAddress"></p>
+    <p id="policyId"></p>
+    <div style="margin-top: 20px">
+      <span>TransactionId:</span>
+      <span id="transactionId"></span>
+    </div>
+  </body>
+  <script>
+    var typhon;
+    window.onload = () => {
+      if (window.cardano) {
+        typhon = window.cardano.typhon;
+      }
+
+      if (!typhon) {
+        document.getElementById("notInstalledBanner").style.display = "block";
+      }
+    };
+
+    async function _enable() {
+      // check if site is whitelisted
+      const isEnabledResponse = await typhon.isEnabled();
+      if (isEnabledResponse.data) return true;
+
+      // Site not white listed, Request user to whitelist
+      const enableResponse = await typhon.enable();
+
+      if (enableResponse.status) {
+        return true;
+      }
+
+      return false;
+    }
+
+    async function mint() {
+      if (!typhon) {
+        console.log("Typhon Extension not installed !");
+        return;
+      }
+
+      // enable
+      const accessEnabled = await _enable();
+      if (!accessEnabled) {
+        console.log("Site not whitelisted !");
+        return;
+      }
+
+      const assetName = document.getElementById("assetName").value;
+      const amount = document.getElementById("amount").value;
+
+      const addressResponse = await window.cardano.typhon.getAddress();
+      const bech32Address = addressResponse.data;
+
+      document.getElementById("receivingAddress").innerHTML =
+        "Receiving Address: " + bech32Address;
+
+      const decoded = typhonjs.utils.decodeBech32(bech32Address);
+      const pubKeyHash = decoded.value.slice(2, 56 + 2);
+
+      const nativeScript = {
+        pubKeyHash: pubKeyHash,
+      };
+      const nativeScriptFactory = new typhonjs.NativeScriptFactory(
+        nativeScript
+      );
+      const policyId = nativeScriptFactory.policyId().toString("hex");
+
+      document.getElementById("policyId").innerHTML = "PolicyId: " + policyId;
+
+      const mintResponse = await window.cardano.typhon.transaction({
+        mints: [
+          {
+            policyId: policyId,
+            assets: [
+              {
+                assetName: assetName,
+                amount: amount,
+              },
+            ],
+            nativeScript: nativeScript,
+          },
+        ],
+      });
+
+      if (mintResponse.status) {
+        document.getElementById("transactionId").innerHTML =
+          mintResponse.data.transactionId;
+      } else {
+        console.log("mintResponse: ", mintResponse);
+      }
+    }
+  </script>
+  <style>
+    #notInstalledBanner {
+      display: none;
+      background-color: lightcoral;
+      padding: 30px;
+    }
+  </style>
+</html>

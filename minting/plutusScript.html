@@ -4,37 +4,22 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Transaction - Typhon</title>
+    <title>Mint Transaction (PlutusScript) - Typhon</title>
     <script src="https://cdn.jsdelivr.net/npm/@stricahq/typhonjs"></script>
   </head>
   <body>
     <div id="notInstalledBanner">Typhon Extension not installed</div>
-    <h2>Payment Transaction using Typhon DApp Connector</h2>
-    <input id="addressField" type="text" placeholder="Address" /><br />
-    <input id="amountField" type="text" placeholder="Amount in Lovelace" />
-    <h4>PlutusData</h4>
-    <pre
-      id="plutusDataCBOR"
-      style="
-        background-color: lightgray;
-        white-space: pre-wrap;
-        word-break: break-all;
-      "
-    ></pre>
-    <div>
-      <button onclick="sendTransaction()">Send</button>
-    </div>
-    <br />
-    <br />
-    <div style="margin-top: 40px">
+    <h3>Minting (Plutus Script) using Typhon DApp Connector</h3>
+    <input id="assetName" type="text" placeholder="assetName in hex" /><br />
+    <input id="amount" type="text" placeholder="amount" /><br />
+    <button onclick="mint()">Mint</button>
+    <div style="margin-top: 20px">
       <span>TransactionId:</span>
       <span id="transactionId"></span>
     </div>
   </body>
   <script>
     var typhon;
-    let plutusDataCbor;
-
     window.onload = () => {
       if (window.cardano) {
         typhon = window.cardano.typhon;
@@ -43,15 +28,6 @@
       if (!typhon) {
         document.getElementById("notInstalledBanner").style.display = "block";
       }
-
-      plutusDataCbor = typhonjs.utils
-        .createPlutusDataCbor({
-          constructor: 0,
-          fields: [12, 12],
-        })
-        .toString("hex");
-
-      document.getElementById("plutusDataCBOR").innerHTML = plutusDataCbor;
     };
 
     async function _enable() {
@@ -69,7 +45,7 @@
       return false;
     }
 
-    async function sendTransaction() {
+    async function mint() {
       if (!typhon) {
         console.log("Typhon Extension not installed !");
         return;
@@ -82,24 +58,40 @@
         return;
       }
 
-      const address = document.getElementById("addressField").value;
-      const amount = document.getElementById("amountField").value;
+      const assetName = document.getElementById("assetName").value;
+      const amount = document.getElementById("amount").value;
 
-      const paymentResponse = await window.cardano.typhon.paymentTransaction({
-        outputs: [
+      const mintResponse = await window.cardano.typhon.transaction({
+        mints: [
           {
-            address: address,
-            amount: amount,
-            plutusDataCbor: plutusDataCbor,
+            policyId:
+              "648823ffdad1610b4162f4dbc87bd47f6f9cf45d772ddef661eff198",
+            assets: [
+              {
+                assetName: assetName,
+                amount: amount,
+              },
+            ],
+            plutusScript: {
+              type: "PlutusScriptV1",
+              cborHex: "4e4d01000033222200412001200101",
+            },
+            redeemer: {
+              plutusDataCbor: "d8799f0c0cff",
+              exUnits: {
+                mem: 74400,
+                steps: 22121439,
+              },
+            },
           },
         ],
       });
 
-      if (paymentResponse.status) {
+      if (mintResponse.status) {
         document.getElementById("transactionId").innerHTML =
-          paymentResponse.data.transactionId;
+          mintResponse.data.transactionId;
       } else {
-        console.log("paymentResponse: ", paymentResponse);
+        console.log("mintResponse: ", mintResponse);
       }
     }
   </script>
